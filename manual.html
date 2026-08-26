@@ -1,0 +1,438 @@
+<!doctype html>
+<!--
+  バスなび（非公式）の利用マニュアル。
+
+  ODPT 公共交通オープンデータチャレンジの応募項目「作品のマニュアルURL」に出すための
+  ページ。アプリ本体（Next.js）とは独立した素の HTML で、public/ に置いてあるので
+  静的エクスポートでそのまま out/manual.html になる。
+
+    公開先: https://tyra0119.github.io/busnavi/manual.html
+
+  アプリ側の CSS を読んでいないのは、ビルドのたびにハッシュつきのファイル名が
+  変わり、リンクが切れるため。配色だけ手で合わせてある（src/app/globals.css と同じ値）。
+
+  末尾の出典表記は ODPT の利用規約上の義務なので削らないこと。
+  → src/components/Attribution.tsx に理由を書いてある。
+-->
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>使い方 — バスなび（非公式）</title>
+    <meta
+      name="description"
+      content="バスなび（非公式）の使い方。のりばとおりばを選ぶだけで、5 事業者のバスの時刻と経路を調べられます。"
+    />
+    <style>
+      :root {
+        --navy: #0b3d5c;
+        --blue: #086db0;
+        --accent: #d9480f;
+        --tint: #eaf2f8;
+        --ink: #1b2a33;
+        --muted: #5a6b76;
+        --line: #d3dde4;
+        --bg: #fff;
+        --card: #f7fafc;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --tint: #14313f;
+          --ink: #e8eef2;
+          --muted: #9fb0bb;
+          --line: #2c4552;
+          --bg: #0f1b22;
+          --card: #16252e;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN',
+          'Noto Sans JP', Meiryo, sans-serif;
+        line-height: 1.85;
+        font-size: 16px;
+      }
+      header {
+        background: var(--navy);
+        color: #fff;
+        padding: 2rem 1.25rem 2.25rem;
+      }
+      .wrap { max-width: 46rem; margin: 0 auto; }
+      header h1 { margin: 0 0 0.4rem; font-size: 1.75rem; line-height: 1.35; }
+      header p { margin: 0; color: #b9d3e3; }
+      .badge {
+        display: inline-block;
+        background: var(--accent);
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border-radius: 999px;
+        padding: 0.15rem 0.7rem;
+        margin-left: 0.5rem;
+        vertical-align: 0.25em;
+      }
+      main { padding: 0 1.25rem 3rem; }
+      h2 {
+        font-size: 1.3rem;
+        margin: 2.75rem 0 0.75rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 2px solid var(--line);
+      }
+      h3 { font-size: 1.05rem; margin: 1.75rem 0 0.4rem; }
+      p, li { color: var(--ink); }
+      .lead { font-size: 1.05rem; }
+      ol.steps { list-style: none; margin: 1.25rem 0; padding: 0; }
+      ol.steps > li {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 0.7rem;
+        padding: 1rem 1.15rem 1rem 3.4rem;
+        margin-bottom: 0.85rem;
+        position: relative;
+      }
+      ol.steps > li::before {
+        content: attr(data-n);
+        position: absolute;
+        left: 1rem;
+        top: 1rem;
+        width: 1.7rem;
+        height: 1.7rem;
+        border-radius: 50%;
+        background: var(--blue);
+        color: #fff;
+        font-size: 0.9rem;
+        font-weight: 700;
+        display: grid;
+        place-items: center;
+      }
+      /* 見出しだけを行にする。文中の <b> まで block にすると文が途中で切れる */
+      ol.steps > li > b:first-child { display: block; margin-bottom: 0.15rem; }
+      .note {
+        background: var(--tint);
+        border-left: 4px solid var(--blue);
+        border-radius: 0 0.5rem 0.5rem 0;
+        padding: 0.85rem 1.1rem;
+        margin: 1.25rem 0;
+      }
+      .note.warn { background: #fbf1ec; border-left-color: var(--accent); }
+      @media (prefers-color-scheme: dark) {
+        .note.warn { background: #3a2418; }
+      }
+      .note p:first-child { margin-top: 0; }
+      .note p:last-child { margin-bottom: 0; }
+      .note b { color: var(--blue); }
+      .note.warn b { color: var(--accent); }
+      table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+      th, td {
+        border: 1px solid var(--line);
+        padding: 0.55rem 0.7rem;
+        text-align: left;
+        vertical-align: top;
+        font-size: 0.94rem;
+      }
+      th { background: var(--tint); font-weight: 700; }
+      .scroll { overflow-x: auto; }
+      a { color: var(--blue); }
+      code {
+        background: var(--tint);
+        border-radius: 0.25rem;
+        padding: 0.1rem 0.35rem;
+        font-size: 0.9em;
+      }
+      footer {
+        border-top: 1px solid var(--line);
+        margin-top: 3rem;
+        padding: 1.5rem 1.25rem 3rem;
+        font-size: 0.85rem;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+      footer .disclaimer { color: var(--ink); font-weight: 600; }
+      .toc { background: var(--card); border: 1px solid var(--line); border-radius: 0.7rem; padding: 0.85rem 1.15rem; }
+      .toc ul { margin: 0.35rem 0 0; padding-left: 1.2rem; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <h1>バスなび の使い方<span class="badge">非公式</span></h1>
+        <p>のりばとおりばを選ぶだけで、バスの時刻と経路がわかります。</p>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <p class="lead">
+        バスなびは、路線バスの時刻と経路を調べるための Web サイトです。
+        アプリのインストールは要りません。ブラウザで
+        <a href="https://tyra0119.github.io/busnavi/">https://tyra0119.github.io/busnavi/</a>
+        を開けばすぐ使えます。
+      </p>
+
+      <div class="toc">
+        <b>このページの内容</b>
+        <ul>
+          <li><a href="#basic">1. 基本の使い方（4 ステップ）</a></li>
+          <li><a href="#pick">2. バス停の選び方は 3 通り</a></li>
+          <li><a href="#result">3. 検索結果の見かた</a></li>
+          <li><a href="#live">4. いま走っているバスを見る</a></li>
+          <li><a href="#board">5. 停留所の時刻表を見る</a></li>
+          <li><a href="#handy">6. 便利な機能</a></li>
+          <li><a href="#faq">7. うまくいかないとき</a></li>
+        </ul>
+      </div>
+
+      <h2 id="basic">1. 基本の使い方（4 ステップ）</h2>
+      <p>
+        画面の上にある検索カードを、上から順に埋めていきます。
+        <b>系統（路線番号）を知らなくても使えます。</b>
+      </p>
+
+      <ol class="steps">
+        <li data-n="①">
+          <b>のりば を選ぶ</b>
+          乗る停留所です。「選んでください」を押すと選択画面が開きます。
+        </li>
+        <li data-n="②">
+          <b>おりば を選ぶ</b>
+          降りる停留所です。<b>のりばから乗って行ける停留所だけ</b>が選べます。
+          行けない停留所は薄く表示され、押せません。
+        </li>
+        <li data-n="③">
+          <b>乗車日 を選ぶ</b>
+          初期値は今日です。今日・明日・日付指定から選べます。
+          平日ダイヤか土日祝ダイヤかは<b>自動で判定</b>するので、選ぶ必要はありません。
+        </li>
+        <li data-n="④">
+          <b>時刻 を選ぶ</b>
+          初期値は現在時刻です。「◯時に出発」と「◯時までに到着」を切り替えられます。
+        </li>
+      </ol>
+
+      <p>
+        のりばとおりばが決まると、<b>ボタンを押さなくても自動で検索されます。</b>
+        条件を変えたいときは「この条件でさがす」を押してください。
+      </p>
+
+      <div class="note">
+        <p>
+          <b>いちばん上の「バス事業者」</b>で会社を切り替えます。
+          横浜市営バス・都営バス・西武バス・東急バス・相鉄バスの 5 社に対応しています。
+          停留所・系統・お気に入りは事業者ごとに分かれています。
+        </p>
+        <p>
+          その下の<b>「系統でしぼる」は任意</b>です。停留所の候補が多すぎるときだけ使ってください。
+          しぼると、その系統が通る停留所しか出なくなります。
+        </p>
+      </div>
+
+      <h2 id="pick">2. バス停の選び方は 3 通り</h2>
+      <p>のりば・おりばを押すと開く画面には、3 つのタブがあります。</p>
+
+      <div class="scroll">
+        <table>
+          <tr>
+            <th style="width: 8rem">タブ</th>
+            <th>使いかた</th>
+          </tr>
+          <tr>
+            <td><b>名前で選ぶ</b></td>
+            <td>
+              入力欄に停留所名の一部を入れるとしぼり込まれます。
+              漢字でもひらがなでもローマ字でも探せます（例：「市役所」「しやくしょ」「shiyakusho」）。
+              一覧は 200 件までしか出ません。多いときは、もう少し文字を足してください。
+            </td>
+          </tr>
+          <tr>
+            <td><b>地図で選ぶ</b></td>
+            <td>
+              地図上のバス停をタップして選びます。系統ごとに線の色が変えてあります。
+              バス停以外の場所をタップすると、<b>そこから最寄りのバス停</b>を選びます。
+            </td>
+          </tr>
+          <tr>
+            <td><b>現在地から</b></td>
+            <td>
+              いる場所の近くのバス停を、近い順に並べます。
+              初回はブラウザが位置情報の許可を尋ねるので、「許可」を押してください。
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <p>
+        停留所を押すと<b>その場で確定します。</b>「これでよいですか」の確認は出ません。
+        選び直したいときは、もう一度その欄を押してください。
+      </p>
+
+      <h2 id="result">3. 検索結果の見かた</h2>
+      <p>右側（スマートフォンでは下）に、出発時刻の早い順に便が並びます。</p>
+
+      <div class="scroll">
+        <table>
+          <tr><th style="width: 10rem">表示</th><th>意味</th></tr>
+          <tr><td><b>あと◯分</b></td><td>次の便が出るまでの時間。1 分ごとに数えます</td></tr>
+          <tr><td><b>つぎの便</b></td><td>いまから乗れる、いちばん早い便</td></tr>
+          <tr><td><b>09:32 → 10:20</b></td><td>のりばの発車時刻 → おりばの到着時刻</td></tr>
+          <tr><td><b>48分</b></td><td>乗っている時間</td></tr>
+          <tr><td><b>220円</b></td><td>運賃。データが無い事業者では「運賃不明」と出ます</td></tr>
+          <tr><td><b>乗換なし / 乗換1回</b></td><td>乗り換えの回数。乗り換えは 1 回までさがします</td></tr>
+          <tr><td><b>停車停留所を見る</b></td><td>途中で停まる停留所と、その通過時刻をすべて表示します</td></tr>
+        </table>
+      </div>
+
+      <p>「もっと前の便」「もっと後の便」で、時間帯をずらせます。</p>
+
+      <h2 id="live">4. いま走っているバスを見る</h2>
+      <p>
+        検索結果の下に<b>「区間の地図」</b>が出ます。のりばからおりばまで、
+        バスが実際に通る道が線で描かれます。
+      </p>
+      <p>
+        走行中のバスがあれば、バスのアイコン（🚌）が地図の上に出ます。
+        <b>これから乗る便は大きく</b>、同じ系統のほかの便は小さく表示されます。
+        位置はおよそ 30 秒ごとに取り直します。
+      </p>
+
+      <div class="note warn">
+        <p>
+          <b>「09:35 時点の位置です」という注記に気をつけてください。</b>
+          表示しているのは、その時刻に観測された位置です。いま現在の位置ではありません。
+        </p>
+        <p>
+          遅れについても<b>「5 分以上の遅れ」</b>のように幅のある書き方をしています。
+          元データに遅れそのものは含まれておらず、時刻表と観測位置の差から推定しているためです。
+          正確な運行状況は、各事業者の公式サイトでご確認ください。
+        </p>
+      </div>
+
+      <p>
+        走行中のバスの位置を公開しているのは<b>横浜市営バス・都営バス・西武バス</b>の 3 社です。
+        東急バス・相鉄バスでは時刻表どおりの表示になります。
+      </p>
+
+      <h2 id="board">5. 停留所の時刻表を見る</h2>
+      <p>
+        経路をさがすのではなく、ある停留所の時刻表をそのまま見たいときは、
+        画面左下（スマートフォンでは下のほう）の<b>「停留所の時刻表」</b>を開きます。
+      </p>
+      <p>
+        停留所を選ぶと、その日にその停留所を通るバスが時刻順に並びます。
+        系統ごと・行き先ごとに分かれて表示されます。
+      </p>
+
+      <h2 id="handy">6. 便利な機能</h2>
+
+      <h3>お気に入りの区間</h3>
+      <p>
+        よく使う区間は、検索カードの<b>「★ 登録」</b>を押すと保存できます。
+        次からは「お気に入りの区間」から 1 タップで呼び出せます。
+        保存先はお使いのブラウザの中だけで、どこにも送信されません。
+      </p>
+
+      <h3>往復の入れ替え</h3>
+      <p>
+        のりばとおりばの右にある<b>「⇅ 往復」</b>を押すと、上下が入れ替わります。帰りを調べるときに使います。
+      </p>
+
+      <h3>文字を大きくする</h3>
+      <p>
+        画面いちばん上の<b>「文字の大きさ」</b>で「大きく」を選ぶと、画面全体が 1.35 倍になります。
+        ボタンも一緒に大きくなるので、押し間違いが減ります。
+      </p>
+
+      <h3>英語表示</h3>
+      <p>同じく上部の <b>Language</b> で <b>EN</b> を選ぶと英語表示になります。</p>
+
+      <h2 id="faq">7. うまくいかないとき</h2>
+
+      <div class="scroll">
+        <table>
+          <tr><th style="width: 14rem">症状</th><th>対処</th></tr>
+          <tr>
+            <td>おりばの候補が薄くて選べない</td>
+            <td>
+              そののりばから乗って行けない停留所です。仕様どおりの動作です。
+              のりばを選び直すか、「系統でしぼる」を解除してみてください。
+            </td>
+          </tr>
+          <tr>
+            <td>のりばの一覧が出るまで待たされる</td>
+            <td>
+              停留所が数千あるため、初回だけ数秒かかることがあります。
+              処理中は進捗バーが出ます。停留所名を入力してしぼり込むと速くなります。
+            </td>
+          </tr>
+          <tr>
+            <td>「該当する便がありません」と出る</td>
+            <td>
+              その時間帯に直通・乗換 1 回で行ける便が無い状態です。
+              時刻を早めるか、乗車日を変えてお試しください。深夜早朝はよく起こります。
+            </td>
+          </tr>
+          <tr>
+            <td>運賃が「運賃不明」になる</td>
+            <td>
+              その事業者の運賃データが公開されていません。
+              現在、運賃を表示できるのは横浜市営バスと都営バスです。
+            </td>
+          </tr>
+          <tr>
+            <td>「現在地をつかう」が動かない</td>
+            <td>
+              ブラウザの位置情報が拒否されています。
+              サイトの権限設定で位置情報を許可してから、ページを再読み込みしてください。
+            </td>
+          </tr>
+          <tr>
+            <td>走行中のバスが 1 台も出ない</td>
+            <td>
+              その時間帯に運行していないか、対応していない事業者です。
+              位置を公開しているのは横浜市営・都営・西武の 3 社のみです。
+            </td>
+          </tr>
+          <tr>
+            <td>画面が「読み込んでいます…」のまま</td>
+            <td>
+              JavaScript が無効になっていないかご確認ください。
+              このサイトは JavaScript が動かないとデータを表示できません。
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="note warn">
+        <p>
+          <b>ダイヤ改正の直後はご注意ください。</b>
+          時刻表は閲覧のたびに取得しているため比較的新しい内容が出ますが、
+          元データの更新が反映されるまでに時間差が生じることがあります。
+          お出かけ前には各事業者の公式サイトでもご確認ください。
+        </p>
+      </div>
+    </main>
+
+    <footer class="wrap">
+      <p class="disclaimer">
+        このサイトは非公式です。横浜市交通局・東京都交通局・西武バス株式会社・東急バス株式会社・相鉄バス株式会社が
+        運営するものではありません。表示内容について各事業者へお問い合わせなさらないでください。
+      </p>
+      <p>
+        本サービスは、<a href="https://www.odpt.org/" target="_blank" rel="noreferrer noopener">公共交通オープンデータセンター</a>
+        において提供されるデータを利用しています。データの原典は各事業者です。
+        本サービスの内容は必ずしも正確でない場合があり、必ずしも各事業者の見解を反映するものではありません。
+      </p>
+      <p>
+        データに関するお問い合わせは、<a href="https://www.odpt.org/" target="_blank" rel="noreferrer noopener">公共交通オープンデータセンター</a>
+        へお願いいたします。
+      </p>
+      <p>
+        地図データは <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer noopener">OpenStreetMap</a>
+        の貢献者によるもので、<a href="https://openstreetmap.jp/" target="_blank" rel="noreferrer noopener">OpenStreetMap Japan</a>
+        のタイルを利用しています。
+      </p>
+      <p><a href="https://tyra0119.github.io/busnavi/">← バスなび に戻る</a></p>
+    </footer>
+  </body>
+</html>
